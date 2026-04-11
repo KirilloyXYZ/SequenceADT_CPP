@@ -1,37 +1,49 @@
 #ifndef BITSEQUENCE_HPP
 #define BITSEQUENCE_HPP
 
+#include <cstdint>
+
 #include "Sequence.hpp"
 #include "Bit.hpp"
-#include "MutableArraySequence.hpp"
+#include "DynamicArray.hpp"
 #include "Exceptions.h"
 
 class BitSequence : public Sequence<Bit>
 {
 private:
-    MutableArraySequence<Bit> bits;
+    static const int BITS_PER_BYTE = 8;
+
+    DynamicArray<std::uint8_t> bytes;
+    int bitCount;
+
+    explicit BitSequence(int count);
+
+    static int ByteCount(int count);
+    void CheckIndex(int index) const;
+    bool GetBit(int index) const;
+    void SetBit(int index, bool value);
+    void ClearUnusedBits();
+    void ResizeToBits(int newBitCount);
 
 public:
     BitSequence();
-    BitSequence(Bit* items, int count);
-    BitSequence(const MutableArraySequence<Bit>& bits);
-    BitSequence(const BitSequence& other);
-    ~BitSequence();
+    BitSequence(const Bit* items, int count);
+    ~BitSequence() override;
 
-    Bit GetFirst() const override;
-    Bit GetLast() const override;
-    Bit Get(int index) const override;
+    const Bit& GetFirst() const override;
+    const Bit& GetLast() const override;
+    const Bit& Get(int index) const override;
     Sequence<Bit>* GetSubsequence(int startIndex, int endIndex) const override;
     int GetLength() const override;
 
-    Sequence<Bit>* Append(Bit item) override;
-    Sequence<Bit>* Prepend(Bit item) override;
-    Sequence<Bit>* InsertAt(Bit item, int index) override;
-    Sequence<Bit>* Concat(Sequence<Bit>* list) const override;
+    Sequence<Bit>* Append(const Bit& item) override;
+    Sequence<Bit>* Prepend(const Bit& item) override;
+    Sequence<Bit>* InsertAt(const Bit& item, int index) override;
+    Sequence<Bit>* Concat(const Sequence<Bit>* list) const override;
 
-    Sequence<Bit>* Map(Bit (*func)(Bit)) const override;
-    Sequence<Bit>* Where(bool (*predicate)(Bit)) const override;
-    Bit Reduce(Bit (*func)(Bit, Bit), Bit startValue) const override;
+    Sequence<Bit>* Map(Bit (*func)(const Bit&)) const override;
+    Sequence<Bit>* Where(bool (*predicate)(const Bit&)) const override;
+    Bit Reduce(Bit (*func)(const Bit&, const Bit&), const Bit& startValue) const override;
 
     BitSequence* And(const BitSequence& other) const;
     BitSequence* Or(const BitSequence& other) const;
@@ -39,137 +51,277 @@ public:
     BitSequence* Not() const;
 };
 
+BitSequence::BitSequence(int count) : bytes(ByteCount(count)), bitCount(count)
+{
+    if (count < 0)
+    {
+        throw IndexOutOfRange("BitSequence constructor: count cannot be negative");
+    }
 
-BitSequence::BitSequence() : bits() { }
+    for (int i = 0; i < bytes.GetSize(); ++i)
+    {
+        bytes.Set(i, 0);
+    }
+}
 
-BitSequence::BitSequence(Bit* items, int count) : bits(items, count) { }
+int BitSequence::ByteCount(int count)
+{
+    if (count <= 0)
+    {
+        return 0;
+    }
 
-BitSequence::BitSequence(const MutableArraySequence<Bit>& bits) : bits(bits) { }
+    return (count + BITS_PER_BYTE - 1) / BITS_PER_BYTE; // подсчет байтов 
+}
 
-BitSequence::BitSequence(const BitSequence& other) : bits(other.bits) { }
+void BitSequence::CheckIndex(int index) const
+{
+    if (index < 0 || index >= bitCount)
+    {
+        throw IndexOutOfRange("BitSequence: index out of range");
+    }
+}
+
+bool BitSequence::GetBit(int index) const
+{
+    CheckIndex(index);
+
+    int byteIndex = index / BITS_PER_BYTE;
+    int bitOffset = index % BITS_PER_BYTE;
+    std::uint8_t mask = static_cast<std::uint8_t>(1u << bitOffset);
+
+    return (bytes.Get(byteIndex) & mask) != 0;
+}
+
+void BitSequence::SetBit(int index, bool value)
+{
+    CheckIndex(index);
+
+    int byteIndex = index / BITS_PER_BYTE; // в каком байте нужный бит
+    int bitOffset = index % BITS_PER_BYTE; // Вычисление позиции бита внутри байта
+    std::uint8_t mask = static_cast<std::uint8_t>(1u << bitOffset);
+
+    std::uint8_t byteValue = bytes.Get(byteIndex);
+
+    if (value)
+    {
+        byteValue = static_cast<std::uint8_t>(byteValue | mask);
+    }
+    else
+    {
+        byteValue = static_cast<std::uint8_t>(byteValue & static_cast<std::uint8_t>(~mask));
+    }
+
+    bytes.Set(byteIndex, byteValue);
+}
+
+void BitSequence::ClearUnusedBits()
+{
+    if (bitCount == 0)
+    {
+        return;
+    }
+
+    int usedBitsInLastByte = bitCount % BITS_PER_BYTE;
+    if (usedBitsInLastByte == 0)
+    {
+        return;
+    }
+
+    int lastByteIndex = bytes.GetSize() - 1;
+    std::uint8_t mask = static_cast<std::uint8_t>((1u << usedBitsInLastByte) - 1u);
+
+    bytes.Set(
+        lastByteIndex,
+        static_cast<std::uint8_t>(bytes.Get(lastByteIndex) & mask)
+    );
+}
+
+void BitSequence::ResizeToBits(int newBitCount)
+{
+    if (newBitCount < 0)
+    {
+        throw IndexOutOfRange("BitSequence: count cannot be negative");
+    }
+
+    int oldByteCount = bytes.GetSize();
+    int newByteCount = ByteCount(newBitCount);
+
+    if (newByteCount != oldByteCount)
+    {
+        bytes.Resize(newByteCount);
+
+        for (int i = oldByteCount; i < newByteCount; ++i)
+        {
+            bytes.Set(i, 0);
+        }
+    }
+
+    bitCount = newBitCount;
+    ClearUnusedBits();
+}
+
+BitSequence::BitSequence() : bytes(0), bitCount(0) {}
+
+BitSequence::BitSequence(const Bit* items, int count) : BitSequence(count)
+{
+    if (items == nullptr && count > 0)
+    {
+        throw std::invalid_argument("BitSequence constructor: null items with positive count");
+    }
+
+    for (int i = 0; i < count; ++i)
+    {
+        SetBit(i, items[i].GetValue());
+    }
+
+    ClearUnusedBits();
+}
 
 BitSequence::~BitSequence() = default;
 
-Bit BitSequence::GetFirst() const
+const Bit& BitSequence::GetFirst() const
 {
-    return this->bits.GetFirst();
+    if (bitCount == 0)
+    {
+        throw IndexOutOfRange("BitSequence::GetFirst: sequence is empty");
+    }
+
+    return Bit::FromBool(GetBit(0));
 }
 
-Bit BitSequence::GetLast() const
+const Bit& BitSequence::GetLast() const
 {
-    return this->bits.GetLast();
+    if (bitCount == 0)
+    {
+        throw IndexOutOfRange("BitSequence::GetLast: sequence is empty");
+    }
+
+    return Bit::FromBool(GetBit(bitCount - 1));
 }
 
-Bit BitSequence::Get(int index) const
+const Bit& BitSequence::Get(int index) const
 {
-    return this->bits.Get(index);
+    return Bit::FromBool(GetBit(index));
 }
 
 Sequence<Bit>* BitSequence::GetSubsequence(int startIndex, int endIndex) const
 {
     if (startIndex < 0 || endIndex < 0 ||
-        startIndex >= this->GetLength() ||
-        endIndex >= this->GetLength() ||
+        startIndex >= bitCount || endIndex >= bitCount ||
         startIndex > endIndex)
     {
         throw IndexOutOfRange("BitSequence::GetSubsequence: index out of range");
     }
 
     int newSize = endIndex - startIndex + 1;
-    Bit* data = new Bit[newSize];
+    BitSequence* result = new BitSequence(newSize);
 
     for (int i = 0; i < newSize; ++i)
     {
-        data[i] = this->Get(startIndex + i);
+        result->SetBit(i, GetBit(startIndex + i));
     }
 
-    Sequence<Bit>* result = new BitSequence(data, newSize);
-    delete[] data;
     return result;
 }
 
 int BitSequence::GetLength() const
 {
-    return this->bits.GetLength();
+    return bitCount;
 }
 
-Sequence<Bit>* BitSequence::Append(Bit item)
+Sequence<Bit>* BitSequence::Append(const Bit& item)
 {
-    this->bits.Append(item);
+    int oldCount = bitCount;
+    ResizeToBits(oldCount + 1);
+    SetBit(oldCount, item.GetValue());
     return this;
 }
 
-Sequence<Bit>* BitSequence::Prepend(Bit item)
+Sequence<Bit>* BitSequence::Prepend(const Bit& item)
 {
-    this->bits.Prepend(item);
+    int oldCount = bitCount;
+    ResizeToBits(oldCount + 1);
+
+    for (int i = oldCount; i > 0; --i)
+    {
+        SetBit(i, GetBit(i - 1));
+    }
+
+    SetBit(0, item.GetValue());
     return this;
 }
 
-Sequence<Bit>* BitSequence::InsertAt(Bit item, int index)
+Sequence<Bit>* BitSequence::InsertAt(const Bit& item, int index)
 {
-    this->bits.InsertAt(item, index);
+    if (index < 0 || index >= bitCount)
+    {
+        throw IndexOutOfRange("BitSequence::InsertAt: index out of range");
+    }
+
+    int oldCount = bitCount;
+    ResizeToBits(oldCount + 1);
+
+    for (int i = oldCount; i > index; --i)
+    {
+        SetBit(i, GetBit(i - 1));
+    }
+
+    SetBit(index, item.GetValue());
     return this;
 }
 
-Sequence<Bit>* BitSequence::Concat(Sequence<Bit>* list) const
+Sequence<Bit>* BitSequence::Concat(const Sequence<Bit>* list) const
 {
     if (list == nullptr)
     {
         throw std::invalid_argument("BitSequence::Concat: null list");
     }
 
-    int size1 = this->GetLength();
-    int size2 = list->GetLength();
+    BitSequence* result = new BitSequence(bitCount + list->GetLength());
 
-    Bit* data = new Bit[size1 + size2];
-
-    for (int i = 0; i < size1; ++i)
+    for (int i = 0; i < bitCount; ++i)
     {
-        data[i] = this->Get(i);
+        result->SetBit(i, GetBit(i));
     }
 
-    for (int i = 0; i < size2; ++i)
+    for (int i = 0; i < list->GetLength(); ++i)
     {
-        data[size1 + i] = list->Get(i);
+        result->SetBit(bitCount + i, list->Get(i).GetValue());
     }
 
-    Sequence<Bit>* result = new BitSequence(data, size1 + size2);
-    delete[] data;
     return result;
 }
 
-Sequence<Bit>* BitSequence::Map(Bit (*func)(Bit)) const
+Sequence<Bit>* BitSequence::Map(Bit (*func)(const Bit&)) const
 {
     if (func == nullptr)
     {
         throw std::invalid_argument("BitSequence::Map: null function");
     }
 
-    int size = this->GetLength();
-    Bit* data = new Bit[size];
+    BitSequence* result = new BitSequence(bitCount);
 
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < bitCount; ++i)
     {
-        data[i] = func(this->Get(i));
+        result->SetBit(i, func(Get(i)).GetValue());
     }
 
-    Sequence<Bit>* result = new BitSequence(data, size);
-    delete[] data;
     return result;
 }
 
-Sequence<Bit>* BitSequence::Where(bool (*predicate)(Bit)) const
+Sequence<Bit>* BitSequence::Where(bool (*predicate)(const Bit&)) const
 {
     if (predicate == nullptr)
     {
         throw std::invalid_argument("BitSequence::Where: null predicate");
     }
 
-    Sequence<Bit>* result = new BitSequence();
+    BitSequence* result = new BitSequence();
 
-    for (int i = 0; i < this->GetLength(); ++i)
+    for (int i = 0; i < bitCount; ++i)
     {
-        Bit value = this->Get(i);
+        const Bit& value = Get(i);
         if (predicate(value))
         {
             result->Append(value);
@@ -179,7 +331,7 @@ Sequence<Bit>* BitSequence::Where(bool (*predicate)(Bit)) const
     return result;
 }
 
-Bit BitSequence::Reduce(Bit (*func)(Bit, Bit), Bit startValue) const
+Bit BitSequence::Reduce(Bit (*func)(const Bit&, const Bit&), const Bit& startValue) const
 {
     if (func == nullptr)
     {
@@ -188,9 +340,9 @@ Bit BitSequence::Reduce(Bit (*func)(Bit, Bit), Bit startValue) const
 
     Bit result = startValue;
 
-    for (int i = 0; i < this->GetLength(); ++i)
+    for (int i = 0; i < bitCount; ++i)
     {
-        result = func(this->Get(i), result);
+        result = func(Get(i), result);
     }
 
     return result;
@@ -198,76 +350,80 @@ Bit BitSequence::Reduce(Bit (*func)(Bit, Bit), Bit startValue) const
 
 BitSequence* BitSequence::And(const BitSequence& other) const
 {
-    if (this->GetLength() != other.GetLength())
+    if (bitCount != other.bitCount)
     {
         throw std::invalid_argument("BitSequence::And: sequences must have equal length");
     }
 
-    int size = this->GetLength();
-    Bit* data = new Bit[size];
+    BitSequence* result = new BitSequence(bitCount);
 
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < bytes.GetSize(); ++i)
     {
-        data[i] = this->Get(i) & other.Get(i);
+        result->bytes.Set(
+            i,
+            static_cast<std::uint8_t>(bytes.Get(i) & other.bytes.Get(i))
+        );
     }
 
-    BitSequence* result = new BitSequence(data, size);
-    delete[] data;
+    result->ClearUnusedBits();
     return result;
 }
 
 BitSequence* BitSequence::Or(const BitSequence& other) const
 {
-    if (this->GetLength() != other.GetLength())
+    if (bitCount != other.bitCount)
     {
         throw std::invalid_argument("BitSequence::Or: sequences must have equal length");
     }
 
-    int size = this->GetLength();
-    Bit* data = new Bit[size];
+    BitSequence* result = new BitSequence(bitCount);
 
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < bytes.GetSize(); ++i)
     {
-        data[i] = this->Get(i) | other.Get(i);
+        result->bytes.Set(
+            i,
+            static_cast<std::uint8_t>(bytes.Get(i) | other.bytes.Get(i))
+        );
     }
 
-    BitSequence* result = new BitSequence(data, size);
-    delete[] data;
+    result->ClearUnusedBits();
     return result;
 }
 
 BitSequence* BitSequence::Xor(const BitSequence& other) const
 {
-    if (this->GetLength() != other.GetLength())
+    if (bitCount != other.bitCount)
     {
         throw std::invalid_argument("BitSequence::Xor: sequences must have equal length");
     }
 
-    int size = this->GetLength();
-    Bit* data = new Bit[size];
+    BitSequence* result = new BitSequence(bitCount);
 
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < bytes.GetSize(); ++i)
     {
-        data[i] = this->Get(i) ^ other.Get(i);
+        result->bytes.Set(
+            i,
+            static_cast<std::uint8_t>(bytes.Get(i) ^ other.bytes.Get(i))
+        );
     }
 
-    BitSequence* result = new BitSequence(data, size);
-    delete[] data;
+    result->ClearUnusedBits();
     return result;
 }
 
 BitSequence* BitSequence::Not() const
 {
-    int size = this->GetLength();
-    Bit* data = new Bit[size];
+    BitSequence* result = new BitSequence(bitCount);
 
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < bytes.GetSize(); ++i)
     {
-        data[i] = ~this->Get(i);
+        result->bytes.Set(
+            i,
+            static_cast<std::uint8_t>(~bytes.Get(i))
+        );
     }
 
-    BitSequence* result = new BitSequence(data, size);
-    delete[] data;
+    result->ClearUnusedBits();
     return result;
 }
 

@@ -4,7 +4,6 @@
 #include "Sequence.hpp"
 #include "DynamicArray.hpp"
 
-
 template<typename T>
 class ArraySequence : public Sequence<T>
 {
@@ -14,56 +13,53 @@ private:
 
 protected:
 
-    ArraySequence<T>* AppendInternal(T item);
-    ArraySequence<T>* PrependInternal(T item);
-    ArraySequence<T>* InsertAtInternal(T item, int index);
+    ArraySequence<T>* AppendInternal(const T& item);
+    ArraySequence<T>* PrependInternal(const T& item);
+    ArraySequence<T>* InsertAtInternal(const T& item, int index);
 
     virtual ArraySequence<T>* CreateEmpty() const = 0;
-    virtual ArraySequence<T>* CreateFromArray(T* items, int count) const = 0;
-
-public:
-
-    ArraySequence(T* items, int count);
-    ArraySequence();
-    ArraySequence(const DynamicArray<T>& dynamicArray);
-    ArraySequence(const ArraySequence<T>& other);
-    virtual ~ArraySequence() = default;
+    virtual ArraySequence<T>* CreateFromArray(const T* items, int count) const = 0;
 
     virtual ArraySequence<T>* Clone() const = 0;
     virtual ArraySequence<T>* Instance() = 0;
 
-    T GetFirst() const override;
-    T GetLast() const override;
-    T Get(int index) const override;
+public:
+
+    ArraySequence(const T* items, int count);
+    ArraySequence();
+    ArraySequence(const ArraySequence<T>& other);
+
+    virtual ~ArraySequence() = default;
+
+    const T& GetFirst() const override;
+    const T& GetLast() const override;
+    const T& Get(int index) const override;
     Sequence<T>* GetSubsequence(int startIndex, int endIndex) const override;
     int GetLength() const override;
 
-    Sequence<T>* Append(T item) override;
-    Sequence<T>* Prepend(T item) override;
-    Sequence<T>* InsertAt(T item, int index) override;
-    Sequence<T>* Concat(Sequence<T>* list) const override;
+    Sequence<T>* Append(const T& item) override;
+    Sequence<T>* Prepend(const T& item) override;
+    Sequence<T>* InsertAt(const T& item, int index) override;
+    Sequence<T>* Concat(const Sequence<T>* list) const override;
 
-    Sequence<T>* Map(T (*func)(T)) const override;
-    Sequence<T>* Where(bool (*predicate)(T)) const override;
-    T Reduce(T (*func)(T, T), T startValue) const override; 
+    Sequence<T>* Map(T (*func)(const T&)) const override;
+    Sequence<T>* Where(bool (*predicate)(const T&)) const override;
+    T Reduce(T (*func)(const T&, const T&), const T& startValue) const override;
 };
 
 template<typename T>
 ArraySequence<T>::ArraySequence() : items(0) { }
 
 template<typename T>
-ArraySequence<T>::ArraySequence(T* items, int count) : items(items, count) { }
-
-template<typename T>
-ArraySequence<T>::ArraySequence(const DynamicArray<T>& dynamicArray) : items(dynamicArray) { }
+ArraySequence<T>::ArraySequence(const T* items, int count) : items(items, count) { }
 
 template<typename T>
 ArraySequence<T>::ArraySequence(const ArraySequence<T>& other) : items(other.items) { }
 
 template<typename T>
-T ArraySequence<T>::GetFirst() const 
+const T& ArraySequence<T>::GetFirst() const
 {
-    if(this->items.GetSize() == 0)
+    if (this->items.GetSize() == 0)
     {
         throw IndexOutOfRange("ArraySequence::GetFirst: sequence is empty");
     }
@@ -72,9 +68,9 @@ T ArraySequence<T>::GetFirst() const
 }
 
 template<typename T>
-T ArraySequence<T>::GetLast() const
+const T& ArraySequence<T>::GetLast() const
 {
-    if(this->items.GetSize() == 0)
+    if (this->items.GetSize() == 0)
     {
         throw IndexOutOfRange("ArraySequence::GetLast: sequence is empty");
     }
@@ -83,7 +79,7 @@ T ArraySequence<T>::GetLast() const
 }
 
 template<typename T>
-T ArraySequence<T>::Get(int index) const
+const T& ArraySequence<T>::Get(int index) const
 {
     return this->items.Get(index);
 }
@@ -91,18 +87,18 @@ T ArraySequence<T>::Get(int index) const
 template<typename T>
 Sequence<T>* ArraySequence<T>::GetSubsequence(int startIndex, int endIndex) const
 {
-    if(startIndex < 0 || endIndex < 0 || startIndex >= this->items.GetSize() || endIndex >= this->items.GetSize() || startIndex > endIndex)
+    if (startIndex < 0 || endIndex < 0 || startIndex >= this->items.GetSize() || endIndex >= this->items.GetSize() || startIndex > endIndex)
     {
         throw IndexOutOfRange("ArraySequence::GetSubsequence: index out of range");
     }
 
     int newSize = endIndex - startIndex + 1;
     T* data = new T[newSize];
-    for(int i = 0; i < newSize; ++i)
+    for (int i = 0; i < newSize; ++i)
     {
         data[i] = this->items.Get(i + startIndex);
     }
-    Sequence<T>* newSequence = this->CreateFromArray(data, newSize); 
+    Sequence<T>* newSequence = this->CreateFromArray(data, newSize);
     delete[] data;
     return newSequence;
 }
@@ -114,20 +110,20 @@ int ArraySequence<T>::GetLength() const
 }
 
 template<typename T>
-ArraySequence<T>* ArraySequence<T>::AppendInternal(T item)
+ArraySequence<T>* ArraySequence<T>::AppendInternal(const T& item)
 {
     int oldSize = this->items.GetSize();
     this->items.Resize(oldSize + 1);
     this->items.Set(oldSize, item);
-    return this; // тут так как ArraySequence наследник Sequence то this возвращаем указатель на ArraySequence и неявно приводится к типу Sequence<T>* 
+    return this;
 }
 
 template<typename T>
-ArraySequence<T>* ArraySequence<T>::PrependInternal(T item)
+ArraySequence<T>* ArraySequence<T>::PrependInternal(const T& item)
 {
     int oldSize = this->items.GetSize();
     this->items.Resize(oldSize + 1);
-    for(int i = oldSize; i > 0; --i)
+    for (int i = oldSize; i > 0; --i)
     {
         this->items.Set(i, this->items.Get(i - 1));
     }
@@ -136,7 +132,7 @@ ArraySequence<T>* ArraySequence<T>::PrependInternal(T item)
 }
 
 template<typename T>
-ArraySequence<T>* ArraySequence<T>::InsertAtInternal(T item, int index)
+ArraySequence<T>* ArraySequence<T>::InsertAtInternal(const T& item, int index)
 {
     int oldSize = this->items.GetSize();
 
@@ -146,7 +142,7 @@ ArraySequence<T>* ArraySequence<T>::InsertAtInternal(T item, int index)
     }
 
     this->items.Resize(oldSize + 1);
-    for(int i = oldSize; i > index; --i)
+    for (int i = oldSize; i > index; --i)
     {
         this->items.Set(i, this->items.Get(i - 1));
     }
@@ -155,12 +151,12 @@ ArraySequence<T>* ArraySequence<T>::InsertAtInternal(T item, int index)
 }
 
 template<typename T>
-Sequence<T>* ArraySequence<T>::Concat(Sequence<T>* list) const
+Sequence<T>* ArraySequence<T>::Concat(const Sequence<T>* list) const
 {
     if (list == nullptr)
-{
-    throw std::invalid_argument("ArraySequence::Concat: null list");
-}
+    {
+        throw std::invalid_argument("ArraySequence::Concat: null list");
+    }
 
     int size1 = this->items.GetSize();
     int size2 = list->GetLength();
@@ -184,7 +180,7 @@ Sequence<T>* ArraySequence<T>::Concat(Sequence<T>* list) const
 }
 
 template<typename T>
-Sequence<T>* ArraySequence<T>::Map(T (*func)(T)) const
+Sequence<T>* ArraySequence<T>::Map(T (*func)(const T&)) const
 {
     if (func == nullptr)
     {
@@ -205,7 +201,7 @@ Sequence<T>* ArraySequence<T>::Map(T (*func)(T)) const
 }
 
 template<typename T>
-Sequence<T>* ArraySequence<T>::Where(bool (*predicate)(T)) const
+Sequence<T>* ArraySequence<T>::Where(bool (*predicate)(const T&)) const
 {
     if (predicate == nullptr)
     {
@@ -216,7 +212,7 @@ Sequence<T>* ArraySequence<T>::Where(bool (*predicate)(T)) const
 
     for (int i = 0; i < this->GetLength(); ++i)
     {
-        T value = this->Get(i);
+        const T& value = this->Get(i);
         if (predicate(value))
         {
             result->Append(value);
@@ -227,7 +223,7 @@ Sequence<T>* ArraySequence<T>::Where(bool (*predicate)(T)) const
 }
 
 template<typename T>
-T ArraySequence<T>::Reduce(T (*func)(T, T), T startValue) const
+T ArraySequence<T>::Reduce(T (*func)(const T&, const T&), const T& startValue) const
 {
     if (func == nullptr)
     {
@@ -245,20 +241,21 @@ T ArraySequence<T>::Reduce(T (*func)(T, T), T startValue) const
 }
 
 template<typename T>
-Sequence<T>* ArraySequence<T>::Append(T item)
+Sequence<T>* ArraySequence<T>::Append(const T& item)
 {
     return Instance()->AppendInternal(item);
 }
 
 template<typename T>
-Sequence<T>* ArraySequence<T>::Prepend(T item)
+Sequence<T>* ArraySequence<T>::Prepend(const T& item)
 {
     return Instance()->PrependInternal(item);
 }
 
 template<typename T>
-Sequence<T>* ArraySequence<T>::InsertAt(T item, int index)
+Sequence<T>* ArraySequence<T>::InsertAt(const T& item, int index)
 {
     return Instance()->InsertAtInternal(item, index);
 }
+
 #endif

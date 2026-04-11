@@ -11,54 +11,50 @@ private:
     LinkedList<T> items;
 
 public:
-    ListSequence(T* items, int count);
+    ListSequence(const T* items, int count);
     ListSequence();
     ListSequence(const LinkedList<T>& list);
-    ListSequence(const ListSequence<T>& other);
     ~ListSequence() override = default;
 
-    T GetFirst() const override;
-    T GetLast() const override;
-    T Get(int index) const override;
+    const T& GetFirst() const override;
+    const T& GetLast() const override;
+    const T& Get(int index) const override;
     Sequence<T>* GetSubsequence(int startIndex, int endIndex) const override;
     int GetLength() const override;
 
-    Sequence<T>* Append(T item) override;
-    Sequence<T>* Prepend(T item) override;
-    Sequence<T>* InsertAt(T item, int index) override;
-    Sequence<T>* Concat(Sequence<T>* list) const override;
+    Sequence<T>* Append(const T& item) override;
+    Sequence<T>* Prepend(const T& item) override;
+    Sequence<T>* InsertAt(const T& item, int index) override;
+    Sequence<T>* Concat(const Sequence<T>* list) const override;
 
-    Sequence<T>* Map(T (*func)(T)) const override;
-    Sequence<T>* Where(bool (*predicate)(T)) const override;
-    T Reduce(T (*func)(T, T), T startValue) const override;
+    Sequence<T>* Map(T (*func)(const T&)) const override;
+    Sequence<T>* Where(bool (*predicate)(const T&)) const override;
+    T Reduce(T (*func)(const T&, const T&), const T& startValue) const override;
 };
 
 template<typename T>
 ListSequence<T>::ListSequence() : items() { }
 
 template<typename T>
-ListSequence<T>::ListSequence(T* items, int count) : items(items, count) { }
+ListSequence<T>::ListSequence(const T* items, int count) : items(items, count) { }
 
 template<typename T>
 ListSequence<T>::ListSequence(const LinkedList<T>& list) : items(list) { }
 
 template<typename T>
-ListSequence<T>::ListSequence(const ListSequence<T>& other) : items(other.items) { }
-
-template<typename T>
-T ListSequence<T>::GetFirst() const
+const T& ListSequence<T>::GetFirst() const
 {
     return this->items.GetFirst();
 }
 
 template<typename T>
-T ListSequence<T>::GetLast() const
+const T& ListSequence<T>::GetLast() const
 {
     return this->items.GetLast();
 }
 
 template<typename T>
-T ListSequence<T>::Get(int index) const
+const T& ListSequence<T>::Get(int index) const
 {
     return this->items.Get(index);
 }
@@ -79,28 +75,28 @@ Sequence<T>* ListSequence<T>::GetSubsequence(int startIndex, int endIndex) const
 }
 
 template<typename T>
-Sequence<T>* ListSequence<T>::Append(T item)
+Sequence<T>* ListSequence<T>::Append(const T& item)
 {
     this->items.Append(item);
     return this;
 }
 
 template<typename T>
-Sequence<T>* ListSequence<T>::Prepend(T item)
+Sequence<T>* ListSequence<T>::Prepend(const T& item)
 {
     this->items.Prepend(item);
     return this;
 }
 
 template<typename T>
-Sequence<T>* ListSequence<T>::InsertAt(T item, int index)
+Sequence<T>* ListSequence<T>::InsertAt(const T& item, int index)
 {
     this->items.InsertAt(item, index);
     return this;
 }
 
 template<typename T>
-Sequence<T>* ListSequence<T>::Concat(Sequence<T>* list) const
+Sequence<T>* ListSequence<T>::Concat(const Sequence<T>* list) const
 {
     if (list == nullptr)
     {
@@ -116,7 +112,7 @@ Sequence<T>* ListSequence<T>::Concat(Sequence<T>* list) const
 }
 
 template<typename T>
-Sequence<T>* ListSequence<T>::Map(T (*func)(T)) const
+Sequence<T>* ListSequence<T>::Map(T (*func)(const T&)) const
 {
     if (func == nullptr)
     {
@@ -126,7 +122,7 @@ Sequence<T>* ListSequence<T>::Map(T (*func)(T)) const
     int size = this->GetLength();
     T* data = new T[size];
 
-    for(int i = 0; i < size; ++i)
+    for (int i = 0; i < size; ++i)
     {
         data[i] = func(this->Get(i));
     }
@@ -137,7 +133,7 @@ Sequence<T>* ListSequence<T>::Map(T (*func)(T)) const
 }
 
 template<typename T>
-Sequence<T>* ListSequence<T>::Where(bool (*predicate)(T)) const
+Sequence<T>* ListSequence<T>::Where(bool (*predicate)(const T&)) const
 {
     if (predicate == nullptr)
     {
@@ -147,10 +143,10 @@ Sequence<T>* ListSequence<T>::Where(bool (*predicate)(T)) const
     int size = this->GetLength();
     Sequence<T>* newSequence = new ListSequence<T>();
 
-    for(int i = 0; i < size; ++i)
+    for (int i = 0; i < size; ++i)
     {
-        T value = this->Get(i);
-        if(predicate(value))
+        const T& value = this->Get(i);
+        if (predicate(value))
         {
             newSequence->Append(value);
         }
@@ -160,7 +156,7 @@ Sequence<T>* ListSequence<T>::Where(bool (*predicate)(T)) const
 }
 
 template<typename T>
-T ListSequence<T>::Reduce(T (*func)(T, T), T startValue) const
+T ListSequence<T>::Reduce(T (*func)(const T&, const T&), const T& startValue) const
 {
     if (func == nullptr)
     {

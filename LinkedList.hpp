@@ -6,7 +6,6 @@
 template<typename T>
 class LinkedList
 {
-
 private:
 
     class Node
@@ -14,7 +13,7 @@ private:
     public:
         T data;
         Node* next;
-        Node(T value = T(), Node* nextNode = nullptr) : data(value), next(nextNode) { }
+        Node(const T& value = T(), Node* nextNode = nullptr) : data(value), next(nextNode) { }
     };
 
     Node* head;
@@ -23,27 +22,26 @@ private:
 
 public:
 
-    LinkedList(T* items, int count);
+    LinkedList(const T* items, int count);
     LinkedList();
     LinkedList(const LinkedList<T>& list);
     LinkedList<T>& operator=(const LinkedList<T>& other);
     ~LinkedList();
 
-    T GetFirst() const;
-    T GetLast() const;
-    T Get(int index) const;
-    LinkedList<T>* GetSubList(int startIndex, int endIndex) const; //
+    const T& GetFirst() const;
+    const T& GetLast() const;
+    const T& Get(int index) const;
+    LinkedList<T>* GetSubList(int startIndex, int endIndex) const;
     int GetLength() const;
 
-    void Append(T item);
-    void Prepend(T item);
-    void InsertAt(T item, int index);
-    LinkedList<T>* Concat(LinkedList<T>* list) const;
-
+    void Append(const T& item);
+    void Prepend(const T& item);
+    void InsertAt(const T& item, int index);
+    LinkedList<T>* Concat(const LinkedList<T>* list) const;
 };
 
 template<typename T>
-LinkedList<T>::LinkedList(T* items, int count)
+LinkedList<T>::LinkedList(const T* items, int count)
 {
     head = nullptr;
     tail = nullptr;
@@ -71,8 +69,8 @@ LinkedList<T>::LinkedList(T* items, int count)
     for (int i = 1; i < count; ++i)
     {
         Node* newNode = new Node(items[i]);
-        tail->next = newNode; // старый последний узел ссылается на новый только что созданный 
-        tail = newNode; // последним становится новый узел, а у него next == nullptr.
+        tail->next = newNode;
+        tail = newNode;
         length++;
     }
 }
@@ -83,7 +81,6 @@ LinkedList<T>::LinkedList()
     this->head = nullptr;
     this->tail = nullptr;
     this->length = 0;
-    
 }
 
 template<typename T>
@@ -112,9 +109,7 @@ LinkedList<T>::LinkedList(const LinkedList<T>& list)
 
         length++;
         current = current->next;
-
     }
-
 }
 
 template<typename T>
@@ -162,7 +157,7 @@ LinkedList<T>& LinkedList<T>::operator=(const LinkedList<T>& other)
 template<typename T>
 LinkedList<T>::~LinkedList()
 {
-    while(head != nullptr)
+    while (head != nullptr)
     {
         Node* temp = head;
         head = head->next;
@@ -171,9 +166,9 @@ LinkedList<T>::~LinkedList()
 }
 
 template<typename T>
-T LinkedList<T>::GetFirst() const
+const T& LinkedList<T>::GetFirst() const
 {
-    if(head == nullptr)
+    if (head == nullptr)
     {
         throw IndexOutOfRange("LinkedList::GetFirst: list is empty");
     }
@@ -188,9 +183,9 @@ int LinkedList<T>::GetLength() const
 }
 
 template<typename T>
-T LinkedList<T>::GetLast() const
+const T& LinkedList<T>::GetLast() const
 {
-    if(tail == nullptr)
+    if (tail == nullptr)
     {
         throw IndexOutOfRange("LinkedList::GetLast: list is empty");
     }
@@ -199,15 +194,15 @@ T LinkedList<T>::GetLast() const
 }
 
 template<typename T>
-T LinkedList<T>::Get(int index) const
+const T& LinkedList<T>::Get(int index) const
 {
-    if(index < 0 || index >= this->length)
+    if (index < 0 || index >= this->length)
     {
         throw IndexOutOfRange("LinkedList::Get: index out of range");
     }
 
     Node* current = this->head;
-    for(int i = 0; i < index; ++i)
+    for (int i = 0; i < index; ++i)
     {
         current = current->next;
     }
@@ -215,9 +210,9 @@ T LinkedList<T>::Get(int index) const
 }
 
 template<typename T>
-void LinkedList<T>::Append(T item)
+void LinkedList<T>::Append(const T& item)
 {
-    if(this->head == nullptr && this->tail == nullptr && this->length == 0)
+    if (this->head == nullptr && this->tail == nullptr && this->length == 0)
     {
         Node* newNode = new Node(item);
         this->head = newNode;
@@ -234,9 +229,9 @@ void LinkedList<T>::Append(T item)
 }
 
 template<typename T>
-void LinkedList<T>::Prepend(T item)
+void LinkedList<T>::Prepend(const T& item)
 {
-    if(this->head == nullptr && this->tail == nullptr && this->length == 0)
+    if (this->head == nullptr && this->tail == nullptr && this->length == 0)
     {
         Node* newNode = new Node(item);
         this->head = newNode;
@@ -247,29 +242,31 @@ void LinkedList<T>::Prepend(T item)
     {
         Node* newNode = new Node(item, this->head);
         this->head = newNode;
-        this->length++;   
+        this->length++;
     }
 }
 
 template<typename T>
-void LinkedList<T>::InsertAt(T item, int index)
+void LinkedList<T>::InsertAt(const T& item, int index)
 {
-    if(index < 0 || index >= this->length)
+    if (index < 0 || index >= this->length)
     {
         throw IndexOutOfRange("LinkedList::InsertAt: index out of range");
     }
 
-    if(index == 0) Prepend(item);
-
+    if (index == 0)
+    {
+        Prepend(item);
+    }
     else
     {
         Node* current = head;
-        for(int i = 0; i < index - 1; ++i)
+        for (int i = 0; i < index - 1; ++i)
         {
             current = current->next;
         }
 
-        Node* newNode = new Node(item,current->next);
+        Node* newNode = new Node(item, current->next);
         current->next = newNode;
         this->length++;
     }
@@ -278,37 +275,36 @@ void LinkedList<T>::InsertAt(T item, int index)
 template<typename T>
 LinkedList<T>* LinkedList<T>::GetSubList(int startIndex, int endIndex) const
 {
-    if(startIndex < 0 || endIndex < 0 || startIndex >= this->length || endIndex >= this->length || startIndex > endIndex)
+    if (startIndex < 0 || endIndex < 0 || startIndex >= this->length || endIndex >= this->length || startIndex > endIndex)
     {
         throw IndexOutOfRange("LinkedList::GetSubList: index out of range");
     }
 
     int newlen = endIndex - startIndex + 1;
     T* ArrayOfData = new T[newlen];
-    for(int i = 0; i < newlen; ++i)
+    for (int i = 0; i < newlen; ++i)
     {
         ArrayOfData[i] = Get(i + startIndex);
     }
     LinkedList<T>* newList = new LinkedList<T>(ArrayOfData, newlen);
     delete[] ArrayOfData;
     return newList;
-    
 }
 
 template<typename T>
-LinkedList<T>* LinkedList<T>::Concat(LinkedList<T>* list) const
+LinkedList<T>* LinkedList<T>::Concat(const LinkedList<T>* list) const
 {
-    if(list == nullptr)
+    if (list == nullptr)
     {
         throw std::invalid_argument("LinkedList::Concat: null list");
     }
 
     LinkedList<T>* newList = new LinkedList<T>(*this);
-    for(int i = 0; i < list->length; ++i)
+    for (int i = 0; i < list->length; ++i)
     {
         newList->Append(list->Get(i));
     }
     return newList;
 }
 
-#endif 
+#endif

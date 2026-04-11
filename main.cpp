@@ -9,32 +9,32 @@
 #include "Bit.hpp"
 #include "BitSequence.hpp"
 
-int square_int(int x)
+int square_int(const int& x)
 {
     return x * x;
 }
 
-bool is_even_int(int x)
+bool is_even_int(const int& x)
 {
     return x % 2 == 0;
 }
 
-int sum_reduce_int(int value, int acc)
+int sum_reduce_int(const int& value, const int& acc)
 {
     return value + acc;
 }
 
-Bit invert_bit(Bit b)
+Bit invert_bit(const Bit& b)
 {
     return ~b;
 }
 
-bool is_true_bit(Bit b)
+bool is_true_bit(const Bit& b)
 {
     return b.GetValue();
 }
 
-Bit xor_reduce_bit(Bit value, Bit acc)
+Bit xor_reduce_bit(const Bit& value, const Bit& acc)
 {
     return value ^ acc;
 }
@@ -146,7 +146,7 @@ void ReplaceBitSequence(BitSequence*& target, Sequence<Bit>* result)
     }
 }
 
-void PrintIntSequence(const std::string& name, Sequence<int>* seq)
+void PrintIntSequence(const std::string& name, const Sequence<int>* seq)
 {
     std::cout << name << ": ";
     if (seq == nullptr)
@@ -167,7 +167,7 @@ void PrintIntSequence(const std::string& name, Sequence<int>* seq)
     std::cout << "]\n";
 }
 
-void PrintBitSequence(const std::string& name, BitSequence* seq)
+void PrintBitSequence(const std::string& name, const BitSequence* seq)
 {
     std::cout << name << ": ";
     if (seq == nullptr)

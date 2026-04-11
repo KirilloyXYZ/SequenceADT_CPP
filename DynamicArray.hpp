@@ -13,20 +13,20 @@ private:
 
 public:
 
-    DynamicArray(T* items, int count);
+    DynamicArray(const T* items, int count);
     DynamicArray(int size);
     DynamicArray(const DynamicArray<T>& other);
     DynamicArray<T>& operator=(const DynamicArray<T>& other);
     ~DynamicArray();
 
-    T Get(int index) const;
+    const T& Get(int index) const;
     int GetSize() const;
-    void Set(int index, T value);
+    void Set(int index, const T& value);
     void Resize(int newSize);
 };
 
 template<typename T>
-DynamicArray<T>::DynamicArray(T* items, int count) 
+DynamicArray<T>::DynamicArray(const T* items, int count)
 {
     if (count < 0)
     {
@@ -40,7 +40,7 @@ DynamicArray<T>::DynamicArray(T* items, int count)
 
     this->size = count;
     this->items = new T[this->size];
-    for(int i = 0; i < this->size; ++i)
+    for (int i = 0; i < this->size; ++i)
     {
         this->items[i] = items[i];
     }
@@ -80,25 +80,25 @@ DynamicArray<T>::DynamicArray(int size)
 }
 
 template<typename T>
-DynamicArray<T>::DynamicArray(const DynamicArray<T>& other) 
+DynamicArray<T>::DynamicArray(const DynamicArray<T>& other)
 {
     this->size = other.size;
     this->items = new T[this->size];
 
-    for(int i = 0; i < this->size; ++i)
+    for (int i = 0; i < this->size; ++i)
     {
         this->items[i] = other.items[i];
     }
 }
 
 template<typename T>
-DynamicArray<T>::~DynamicArray() 
+DynamicArray<T>::~DynamicArray()
 {
     delete[] items;
 }
 
 template<typename T>
-T DynamicArray<T>::Get(int index) const
+const T& DynamicArray<T>::Get(int index) const
 {
     if (index < 0 || index >= this->size)
     {
@@ -115,7 +115,7 @@ int DynamicArray<T>::GetSize() const
 }
 
 template<typename T>
-void DynamicArray<T>::Set(int index, T value)
+void DynamicArray<T>::Set(int index, const T& value)
 {
     if (index < 0 || index >= this->size)
     {
@@ -126,18 +126,18 @@ void DynamicArray<T>::Set(int index, T value)
 }
 
 template<typename T>
-void DynamicArray<T>::Resize(int newSize) // capasity 
+void DynamicArray<T>::Resize(int newSize)
 {
     if (newSize < 0)
     {
         throw IndexOutOfRange("Resize: new size cannot be negative");
     }
-    
-    if(newSize >= this->size)
-    {
-        T* temp = new T [newSize];
 
-        for(int i = 0; i < this->size; ++i)
+    if (newSize >= this->size)
+    {
+        T* temp = new T[newSize];
+
+        for (int i = 0; i < this->size; ++i)
         {
             temp[i] = this->items[i];
         }
@@ -148,9 +148,9 @@ void DynamicArray<T>::Resize(int newSize) // capasity
     }
     else
     {
-        T* temp = new T [newSize];
+        T* temp = new T[newSize];
 
-        for(int i = 0; i < newSize; ++i)
+        for (int i = 0; i < newSize; ++i)
         {
             temp[i] = this->items[i];
         }
@@ -159,9 +159,6 @@ void DynamicArray<T>::Resize(int newSize) // capasity
         delete[] this->items;
         this->items = temp;
     }
-
 }
- 
- 
 
-#endif 
+#endif

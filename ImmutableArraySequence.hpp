@@ -9,16 +9,17 @@ class ImmutableArraySequence : public ArraySequence<T>
 protected:
 
     ArraySequence<T>* CreateEmpty() const override;
-    ArraySequence<T>* CreateFromArray(T* items, int count) const override;
-
-public:
-    ImmutableArraySequence();
-    ImmutableArraySequence(T* items, int count);
-    ImmutableArraySequence(const DynamicArray<T>& dynamicArray);
-    ImmutableArraySequence(const ImmutableArraySequence<T>& other);
+    ArraySequence<T>* CreateFromArray(const T* items, int count) const override;
 
     ArraySequence<T>* Clone() const override;
     ArraySequence<T>* Instance() override;
+
+public:
+
+    ImmutableArraySequence();
+    ImmutableArraySequence(const T* items, int count);
+    ImmutableArraySequence(const ImmutableArraySequence<T>& other);
+
 };
 
 template<typename T>
@@ -28,7 +29,7 @@ ArraySequence<T>* ImmutableArraySequence<T>::CreateEmpty() const
 }
 
 template<typename T>
-ArraySequence<T>* ImmutableArraySequence<T>::CreateFromArray(T* items, int count) const
+ArraySequence<T>* ImmutableArraySequence<T>::CreateFromArray(const T* items, int count) const
 {
     return new ImmutableArraySequence<T>(items, count);
 }
@@ -37,10 +38,7 @@ template<typename T>
 ImmutableArraySequence<T>::ImmutableArraySequence() : ArraySequence<T>() { }
 
 template<typename T>
-ImmutableArraySequence<T>::ImmutableArraySequence(T* items, int count) : ArraySequence<T>(items, count) { }
-
-template<typename T>
-ImmutableArraySequence<T>::ImmutableArraySequence(const DynamicArray<T>& dynamicArray) : ArraySequence<T>(dynamicArray) { }
+ImmutableArraySequence<T>::ImmutableArraySequence(const T* items, int count) : ArraySequence<T>(items, count) { }
 
 template<typename T>
 ImmutableArraySequence<T>::ImmutableArraySequence(const ImmutableArraySequence<T>& other) : ArraySequence<T>(other) { }
