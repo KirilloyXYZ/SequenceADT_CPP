@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "Sequence.hpp"
+#include "SequenceAlgorithms.hpp"
 #include "MutableArraySequence.hpp"
 #include "ImmutableArraySequence.hpp"
 #include "ListSequence.hpp"
@@ -19,9 +20,9 @@ bool is_even_int(const int& x)
     return x % 2 == 0;
 }
 
-int sum_reduce_int(const int& value, const int& acc)
+int sum_reduce_int(const int& acc, const int& value)
 {
-    return value + acc;
+    return acc + value;
 }
 
 Bit invert_bit(const Bit& b)
@@ -34,9 +35,9 @@ bool is_true_bit(const Bit& b)
     return b.GetValue();
 }
 
-Bit xor_reduce_bit(const Bit& value, const Bit& acc)
+Bit xor_reduce_bit(const Bit& acc, const Bit& value)
 {
-    return value ^ acc;
+    return acc ^ value;
 }
 
 void ClearInput()
@@ -392,7 +393,7 @@ int main()
                         throw std::runtime_error("Create immutable sequence first");
                     }
 
-                    int result = immutableSeq->Reduce(sum_reduce_int, 0);
+                    int result = Reduce(*immutableSeq, sum_reduce_int, 0);
                     std::cout << "Reduce(sum) result = " << result << "\n";
                     break;
                 }
@@ -533,7 +534,7 @@ int main()
                         throw std::runtime_error("Create BitSequence first");
                     }
 
-                    Bit result = bitSeq->Reduce(xor_reduce_bit, Bit(false));
+                    Bit result = Reduce(*bitSeq, xor_reduce_bit, Bit(false));
                     std::cout << "Reduce(XOR) result = " << (result.GetValue() ? 1 : 0) << "\n";
                     break;
                 }

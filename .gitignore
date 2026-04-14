@@ -1,0 +1,5 @@
+output/
+*.o
+*.exe
+lab_final_app
+tests

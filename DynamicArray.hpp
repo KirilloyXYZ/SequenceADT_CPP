@@ -10,20 +10,73 @@ private:
 
     T* items;
     int size;
+    int capacity;
+
+    void Reallocate(int newCapacity);
+    void EnsureCapacity(int minCapacity);
 
 public:
 
     DynamicArray(const T* items, int count);
     DynamicArray(int size);
     DynamicArray(const DynamicArray<T>& other);
-    DynamicArray<T>& operator=(const DynamicArray<T>& other);
     ~DynamicArray();
 
     const T& Get(int index) const;
     int GetSize() const;
     void Set(int index, const T& value);
     void Resize(int newSize);
+
+    void PushBack(const T& value);
+    void InsertAt(int index, const T& value);
 };
+
+template<typename T>
+void DynamicArray<T>::Reallocate(int newCapacity)
+{
+    T* newItems = nullptr;
+
+    if (newCapacity > 0)
+    {
+        newItems = new T[newCapacity];
+
+        for (int i = 0; i < this->size; ++i)
+        {
+            newItems[i] = this->items[i];
+        }
+    }
+
+    delete[] this->items;
+    this->items = newItems;
+    this->capacity = newCapacity;
+}
+
+template<typename T>
+void DynamicArray<T>::EnsureCapacity(int minCapacity)
+{
+    if (minCapacity <= this->capacity)
+    {
+        return;
+    }
+
+    int newCapacity;
+
+    if (this->capacity == 0)
+    {
+        newCapacity = 1;
+    }
+    else
+    {
+        newCapacity = this->capacity;
+    }
+
+    while (newCapacity < minCapacity)
+    {
+        newCapacity *= 2;
+    }
+
+    Reallocate(newCapacity);
+}
 
 template<typename T>
 DynamicArray<T>::DynamicArray(const T* items, int count)
@@ -38,33 +91,22 @@ DynamicArray<T>::DynamicArray(const T* items, int count)
         throw std::invalid_argument("DynamicArray constructor: null items with positive count");
     }
 
-    this->size = count;
-    this->items = new T[this->size];
-    for (int i = 0; i < this->size; ++i)
+        this->size = count;
+        this->capacity = count;
+
+    if (this->capacity == 0)
     {
-        this->items[i] = items[i];
+        this->items = nullptr;
     }
-}
-
-template<typename T>
-DynamicArray<T>& DynamicArray<T>::operator=(const DynamicArray<T>& other)
-{
-    if (this == &other)
+    else
     {
-        return *this;
+        this->items = new T[this->capacity];
+
+        for (int i = 0; i < this->size; ++i)
+        {
+            this->items[i] = items[i];
+        }
     }
-
-    T* newItems = new T[other.size];
-    for (int i = 0; i < other.size; ++i)
-    {
-        newItems[i] = other.items[i];
-    }
-
-    delete[] this->items;
-    this->items = newItems;
-    this->size = other.size;
-
-    return *this;
 }
 
 template<typename T>
@@ -76,18 +118,36 @@ DynamicArray<T>::DynamicArray(int size)
     }
 
     this->size = size;
-    this->items = new T[this->size];
+    this->capacity = size;
+
+    if (this->capacity == 0)
+    {
+        this->items = nullptr;
+    }
+    else
+    {
+        this->items = new T[this->capacity];
+    }
 }
 
 template<typename T>
 DynamicArray<T>::DynamicArray(const DynamicArray<T>& other)
 {
     this->size = other.size;
-    this->items = new T[this->size];
+    this->capacity = other.capacity;
 
-    for (int i = 0; i < this->size; ++i)
+    if (this->capacity == 0)
     {
-        this->items[i] = other.items[i];
+        this->items = nullptr;
+    }
+    else
+    {
+        this->items = new T[this->capacity];
+
+        for (int i = 0; i < this->size; ++i)
+        {
+            this->items[i] = other.items[i];
+        }
     }
 }
 
@@ -133,32 +193,39 @@ void DynamicArray<T>::Resize(int newSize)
         throw IndexOutOfRange("Resize: new size cannot be negative");
     }
 
-    if (newSize >= this->size)
+    if (newSize > this->size)
     {
-        T* temp = new T[newSize];
-
-        for (int i = 0; i < this->size; ++i)
-        {
-            temp[i] = this->items[i];
-        }
-
-        this->size = newSize;
-        delete[] this->items;
-        this->items = temp;
+        EnsureCapacity(newSize);
     }
-    else
+
+    this->size = newSize;
+}
+
+template<typename T>
+void DynamicArray<T>::PushBack(const T& value)
+{
+    EnsureCapacity(this->size + 1);
+    this->items[this->size] = value;
+    this->size++;
+}
+
+template<typename T>
+void DynamicArray<T>::InsertAt(int index, const T& value)
+{
+    if (index < 0 || index > this->size)
     {
-        T* temp = new T[newSize];
-
-        for (int i = 0; i < newSize; ++i)
-        {
-            temp[i] = this->items[i];
-        }
-
-        this->size = newSize;
-        delete[] this->items;
-        this->items = temp;
+        throw IndexOutOfRange("InsertAt: index out of range");
     }
+
+    EnsureCapacity(this->size + 1);
+
+    for (int i = this->size; i > index; --i)
+    {
+        this->items[i] = this->items[i - 1];
+    }
+
+    this->items[index] = value;
+    this->size++;
 }
 
 #endif

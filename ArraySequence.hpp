@@ -44,7 +44,6 @@ public:
 
     Sequence<T>* Map(T (*func)(const T&)) const override;
     Sequence<T>* Where(bool (*predicate)(const T&)) const override;
-    T Reduce(T (*func)(const T&, const T&), const T& startValue) const override;
 };
 
 template<typename T>
@@ -92,15 +91,20 @@ Sequence<T>* ArraySequence<T>::GetSubsequence(int startIndex, int endIndex) cons
         throw IndexOutOfRange("ArraySequence::GetSubsequence: index out of range");
     }
 
-    int newSize = endIndex - startIndex + 1;
-    T* data = new T[newSize];
-    for (int i = 0; i < newSize; ++i)
+    Sequence<T>* result = this->CreateEmpty();
+
+    for (int i = startIndex; i <= endIndex; ++i)
     {
-        data[i] = this->items.Get(i + startIndex);
+        Sequence<T>* next = result->Append(this->items.Get(i));
+
+        if (next != result)
+        {
+            delete result;
+            result = next;
+        }
     }
-    Sequence<T>* newSequence = this->CreateFromArray(data, newSize);
-    delete[] data;
-    return newSequence;
+
+    return result;
 }
 
 template<typename T>
@@ -112,22 +116,14 @@ int ArraySequence<T>::GetLength() const
 template<typename T>
 ArraySequence<T>* ArraySequence<T>::AppendInternal(const T& item)
 {
-    int oldSize = this->items.GetSize();
-    this->items.Resize(oldSize + 1);
-    this->items.Set(oldSize, item);
+    this->items.PushBack(item);
     return this;
 }
 
 template<typename T>
 ArraySequence<T>* ArraySequence<T>::PrependInternal(const T& item)
 {
-    int oldSize = this->items.GetSize();
-    this->items.Resize(oldSize + 1);
-    for (int i = oldSize; i > 0; --i)
-    {
-        this->items.Set(i, this->items.Get(i - 1));
-    }
-    this->items.Set(0, item);
+    this->items.InsertAt(0, item);
     return this;
 }
 
@@ -141,12 +137,7 @@ ArraySequence<T>* ArraySequence<T>::InsertAtInternal(const T& item, int index)
         throw IndexOutOfRange("ArraySequence::InsertAt: index is out of range");
     }
 
-    this->items.Resize(oldSize + 1);
-    for (int i = oldSize; i > index; --i)
-    {
-        this->items.Set(i, this->items.Get(i - 1));
-    }
-    this->items.Set(index, item);
+    this->items.InsertAt(index, item);
     return this;
 }
 
@@ -158,23 +149,29 @@ Sequence<T>* ArraySequence<T>::Concat(const Sequence<T>* list) const
         throw std::invalid_argument("ArraySequence::Concat: null list");
     }
 
-    int size1 = this->items.GetSize();
-    int size2 = list->GetLength();
+    Sequence<T>* result = this->CreateEmpty();
 
-    T* data = new T[size1 + size2];
-
-    for (int i = 0; i < size1; ++i)
+    for (int i = 0; i < this->items.GetSize(); ++i)
     {
-        data[i] = this->items.Get(i);
+        Sequence<T>* next = result->Append(this->items.Get(i));
+
+        if (next != result)
+        {
+            delete result;
+            result = next;
+        }
     }
 
-    for (int i = 0; i < size2; ++i)
+    for (int i = 0; i < list->GetLength(); ++i)
     {
-        data[size1 + i] = list->Get(i);
-    }
+        Sequence<T>* next = result->Append(list->Get(i));
 
-    Sequence<T>* result = this->CreateFromArray(data, size1 + size2);
-    delete[] data;
+        if (next != result)
+        {
+            delete result;
+            result = next;
+        }
+    }
 
     return result;
 }
@@ -188,15 +185,19 @@ Sequence<T>* ArraySequence<T>::Map(T (*func)(const T&)) const
     }
 
     int size = this->GetLength();
-    T* data = new T[size];
+    Sequence<T>* result = this->CreateEmpty();
 
     for (int i = 0; i < size; ++i)
     {
-        data[i] = func(this->Get(i));
+        Sequence<T>* next = result->Append(func(this->Get(i)));
+
+        if (next != result)
+        {
+            delete result;
+            result = next;
+        }
     }
 
-    Sequence<T>* result = this->CreateFromArray(data, size);
-    delete[] data;
     return result;
 }
 
@@ -215,26 +216,14 @@ Sequence<T>* ArraySequence<T>::Where(bool (*predicate)(const T&)) const
         const T& value = this->Get(i);
         if (predicate(value))
         {
-            result->Append(value);
+            Sequence<T>* next = result->Append(value);
+
+            if (next != result)
+            {
+                delete result;
+                result = next;
+            }
         }
-    }
-
-    return result;
-}
-
-template<typename T>
-T ArraySequence<T>::Reduce(T (*func)(const T&, const T&), const T& startValue) const
-{
-    if (func == nullptr)
-    {
-        throw std::invalid_argument("ArraySequence::Reduce: null function");
-    }
-
-    T result = startValue;
-
-    for (int i = 0; i < this->GetLength(); ++i)
-    {
-        result = func(this->Get(i), result);
     }
 
     return result;

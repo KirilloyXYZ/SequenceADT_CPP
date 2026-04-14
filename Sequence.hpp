@@ -20,7 +20,6 @@ public:
 
     virtual Sequence<T>* Map(T (*func)(const T&)) const = 0;
     virtual Sequence<T>* Where(bool (*predicate)(const T&)) const = 0;
-    virtual T Reduce(T (*func)(const T&, const T&), const T& startValue) const = 0;
 };
 
 #endif

@@ -280,14 +280,13 @@ LinkedList<T>* LinkedList<T>::GetSubList(int startIndex, int endIndex) const
         throw IndexOutOfRange("LinkedList::GetSubList: index out of range");
     }
 
-    int newlen = endIndex - startIndex + 1;
-    T* ArrayOfData = new T[newlen];
-    for (int i = 0; i < newlen; ++i)
+    LinkedList<T>* newList = new LinkedList<T>();
+
+    for (int i = startIndex; i <= endIndex; ++i)
     {
-        ArrayOfData[i] = Get(i + startIndex);
+        newList->Append(this->Get(i));
     }
-    LinkedList<T>* newList = new LinkedList<T>(ArrayOfData, newlen);
-    delete[] ArrayOfData;
+
     return newList;
 }
 

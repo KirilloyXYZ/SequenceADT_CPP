@@ -29,7 +29,6 @@ public:
 
     Sequence<T>* Map(T (*func)(const T&)) const override;
     Sequence<T>* Where(bool (*predicate)(const T&)) const override;
-    T Reduce(T (*func)(const T&, const T&), const T& startValue) const override;
 };
 
 template<typename T>
@@ -120,15 +119,13 @@ Sequence<T>* ListSequence<T>::Map(T (*func)(const T&)) const
     }
 
     int size = this->GetLength();
-    T* data = new T[size];
+    Sequence<T>* newSequence = new ListSequence<T>();
 
     for (int i = 0; i < size; ++i)
     {
-        data[i] = func(this->Get(i));
+        newSequence->Append(func(this->Get(i)));
     }
 
-    Sequence<T>* newSequence = new ListSequence<T>(data, size);
-    delete[] data;
     return newSequence;
 }
 
@@ -155,22 +152,6 @@ Sequence<T>* ListSequence<T>::Where(bool (*predicate)(const T&)) const
     return newSequence;
 }
 
-template<typename T>
-T ListSequence<T>::Reduce(T (*func)(const T&, const T&), const T& startValue) const
-{
-    if (func == nullptr)
-    {
-        throw std::invalid_argument("ListSequence::Reduce: null function");
-    }
 
-    T result = startValue;
-
-    for (int i = 0; i < this->GetLength(); ++i)
-    {
-        result = func(this->Get(i), result);
-    }
-
-    return result;
-}
 
 #endif

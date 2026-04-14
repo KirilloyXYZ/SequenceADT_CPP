@@ -43,7 +43,6 @@ public:
 
     Sequence<Bit>* Map(Bit (*func)(const Bit&)) const override;
     Sequence<Bit>* Where(bool (*predicate)(const Bit&)) const override;
-    Bit Reduce(Bit (*func)(const Bit&, const Bit&), const Bit& startValue) const override;
 
     BitSequence* And(const BitSequence& other) const;
     BitSequence* Or(const BitSequence& other) const;
@@ -326,23 +325,6 @@ Sequence<Bit>* BitSequence::Where(bool (*predicate)(const Bit&)) const
         {
             result->Append(value);
         }
-    }
-
-    return result;
-}
-
-Bit BitSequence::Reduce(Bit (*func)(const Bit&, const Bit&), const Bit& startValue) const
-{
-    if (func == nullptr)
-    {
-        throw std::invalid_argument("BitSequence::Reduce: null function");
-    }
-
-    Bit result = startValue;
-
-    for (int i = 0; i < bitCount; ++i)
-    {
-        result = func(Get(i), result);
     }
 
     return result;
